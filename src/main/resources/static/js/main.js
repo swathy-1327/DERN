@@ -59,3 +59,45 @@ async function loadReports() {
 }
 
 document.addEventListener("DOMContentLoaded", initMap);
+
+document.addEventListener("DOMContentLoaded", () => {
+    const sosButton = document.getElementById("sosButton");
+
+    if (sosButton) {
+        sosButton.addEventListener("click", triggerSOS);
+    }
+});
+
+async function triggerSOS() {
+    if (!navigator.geolocation) {
+        alert("Geolocation not supported.");
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(async (position) => {
+        const payload = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            status: "ACTIVE"
+        };
+
+        try {
+            const response = await fetch("/api/sos", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                alert("SOS triggered successfully.");
+            } else {
+                alert("Failed to trigger SOS.");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Something went wrong.");
+        }
+    });
+}

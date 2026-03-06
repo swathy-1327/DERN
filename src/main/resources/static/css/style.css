@@ -30,3 +30,41 @@ main {
     height: 80vh;
     border-radius: 12px;
 }
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 500px;
+    background: white;
+    padding: 16px;
+    border-radius: 12px;
+}
+
+input, select, textarea, button {
+    padding: 10px;
+    font-size: 16px;
+}
+
+button {
+    background: #dc2626;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.sos-button {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: red;
+    color: white;
+    border: none;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+}
