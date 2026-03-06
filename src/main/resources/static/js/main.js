@@ -1,36 +1,37 @@
 let map;
+let reportMarkers = [];
 
-async function initMap() {
-    const defaultLocation = { lat: 10.0159, lng: 76.3419 };
+function initMap() {
+    const defaultLat = 10.0159;
+    const defaultLng = 76.3419;
 
-    map = new google.maps.Map(document.getElementById("map"), {
-        center: defaultLocation,
-        zoom: 14,
-    });
+    map = L.map("map").setView([defaultLat, defaultLng], 14);
+
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
 
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             (position) => {
-                const userLocation = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude,
-                };
+                const userLat = position.coords.latitude;
+                const userLng = position.coords.longitude;
 
-                map.setCenter(userLocation);
+                map.setView([userLat, userLng], 15);
 
-                new google.maps.Marker({
-                    position: userLocation,
-                    map,
-                    title: "You are here",
-                });
+                L.marker([userLat, userLng])
+                    .addTo(map)
+                    .bindPopup("You are here")
+                    .openPopup();
             },
-            () => {
-                console.log("Location access denied.");
+            (error) => {
+                console.log("Location access denied or unavailable:", error.message);
             }
         );
     }
 
-    await loadReports();
+    loadReports();
 }
 
 async function loadReports() {
@@ -38,17 +39,23 @@ async function loadReports() {
         const response = await fetch("/api/reports");
         const reports = await response.json();
 
+        reportMarkers.forEach(marker => map.removeLayer(marker));
+        reportMarkers = [];
+
         reports.forEach((report) => {
-            new google.maps.Marker({
-                position: {
-                    lat: report.latitude,
-                    lng: report.longitude,
-                },
-                map: map,
-                title: `${report.type} - ${report.description || ""}`,
-            });
+            const marker = L.marker([report.latitude, report.longitude])
+                .addTo(map)
+                .bindPopup(`
+          <b>${report.type}</b><br>
+          ${report.description || "No description"}<br>
+          Severity: ${report.severity ?? "N/A"}
+        `);
+
+            reportMarkers.push(marker);
         });
     } catch (error) {
         console.error("Error loading reports:", error);
     }
 }
+
+document.addEventListener("DOMContentLoaded", initMap);
