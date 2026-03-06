@@ -2,6 +2,45 @@ let map;
 let reportMarkers = [];
 let activeSosId = null;
 let sosActive = false;
+let currentUserLat = null;
+let currentUserLng = null;
+let allReports = [];
+
+const redIcon = new L.Icon({
+    iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    iconSize: [25,41],
+    iconAnchor: [12,41],
+    popupAnchor: [1,-34],
+    shadowSize: [41,41]
+});
+
+const orangeIcon = new L.Icon({
+    iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    iconSize: [25,41],
+    iconAnchor: [12,41],
+    popupAnchor: [1,-34],
+    shadowSize: [41,41]
+});
+
+const yellowIcon = new L.Icon({
+    iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-yellow.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    iconSize: [25,41],
+    iconAnchor: [12,41],
+    popupAnchor: [1,-34],
+    shadowSize: [41,41]
+});
+
+const blueIcon = new L.Icon({
+    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    iconSize: [25,41],
+    iconAnchor: [12,41],
+    popupAnchor: [1,-34],
+    shadowSize: [41,41]
+});
 
 function initMap() {
     const defaultLat = 10.0159;
@@ -36,16 +75,105 @@ function initMap() {
     loadReports();
 }
 
+function checkNearbyHazards() {
+    if (currentUserLat === null || currentUserLng === null) return;
+
+    const nearby = allReports.find(report => {
+        const distance = getDistanceInMeters(
+            currentUserLat,
+            currentUserLng,
+            report.latitude,
+            report.longitude
+        );
+
+        return distance <= 100;
+    });
+
+    if (nearby) {
+        showAlert(`⚠ ${nearby.type} reported nearby`);
+    } else {
+        hideAlert();
+    }
+}
+
+function showAlert(message) {
+    const alertBox = document.getElementById("alertBox");
+    alertBox.textContent = message;
+    alertBox.classList.remove("alert-hidden");
+}
+
+function hideAlert() {
+    const alertBox = document.getElementById("alertBox");
+    alertBox.classList.add("alert-hidden");
+}
+
+function trackUserLocation() {
+    if (!navigator.geolocation) {
+        return;
+    }
+
+    navigator.geolocation.watchPosition(
+        (position) => {
+            currentUserLat = position.coords.latitude;
+            currentUserLng = position.coords.longitude;
+
+            checkNearbyHazards();
+        },
+        (error) => {
+            console.log("Location tracking error:", error.message);
+        },
+        {
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: 10000
+        }
+    );
+}
+
+function getDistanceInMeters(lat1, lng1, lat2, lng2) {
+    const R = 6371000;
+
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) *
+        Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+}
+
 async function loadReports() {
     try {
         const response = await fetch("/api/reports");
         const reports = await response.json();
 
+        allReports = reports;
+
+        function getIconForReport(type){
+
+            if(type === "POTHOLE") return redIcon;
+
+            if(type === "CRASH") return redIcon;
+
+            if(type === "OPEN_CANAL") return orangeIcon;
+
+            if(type === "UNSAFE_AREA") return orangeIcon;
+
+            if(type === "VIOLATION") return yellowIcon;
+
+            return blueIcon;
+        }
+
         reportMarkers.forEach(marker => map.removeLayer(marker));
         reportMarkers = [];
 
         reports.forEach((report) => {
-            const marker = L.marker([report.latitude, report.longitude])
+            const marker = L.marker([report.latitude, report.longitude] , { icon : getIconForReport(report.type) })
                 .addTo(map)
                 .bindPopup(`
           <b>${report.type}</b><br>

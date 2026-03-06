@@ -107,3 +107,21 @@ button {
     50%{transform:scale(1.08)}
     100%{transform:scale(1)}
 }
+
+#alertBox{
+    position: fixed;
+    top: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #facc15;
+    color: #111827;
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-weight: bold;
+    z-index: 9999;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.alert-hidden{
+    display: none;
+}
