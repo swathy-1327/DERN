@@ -5,6 +5,7 @@ let sosActive = false;
 let currentUserLat = null;
 let currentUserLng = null;
 let allReports = [];
+let heatLayer = null;
 
 const redIcon = new L.Icon({
     iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
@@ -74,6 +75,7 @@ function initMap() {
 
     loadReports();
 }
+
 
 function checkNearbyHazards() {
     if (currentUserLat === null || currentUserLng === null) return;
@@ -147,6 +149,19 @@ function getDistanceInMeters(lat1, lng1, lat2, lng2) {
     return R * c;
 }
 
+function getWeightForReport(type, severity) {
+    const s = severity || 1;
+
+    if (type === "ACCIDENT_PRONE") return Math.min(1, 0.55 + s * 0.1);
+    if (type === "CRASH") return Math.min(1, 0.5 + s * 0.1);
+    if (type === "POTHOLE") return Math.min(1, 0.4 + s * 0.1);
+    if (type === "OPEN_CANAL") return Math.min(1, 0.45 + s * 0.1);
+    if (type === "UNSAFE_AREA") return Math.min(1, 0.35 + s * 0.1);
+    if (type === "VIOLATION") return Math.min(1, 0.25 + s * 0.08);
+
+    return 0.4;
+}
+
 async function loadReports() {
     try {
         const response = await fetch("/api/reports");
@@ -156,6 +171,8 @@ async function loadReports() {
 
         function getIconForReport(type){
 
+            if (type === "ACCIDENT_PRONE") return redIcon;
+            
             if(type === "POTHOLE") return redIcon;
 
             if(type === "CRASH") return redIcon;
@@ -183,9 +200,30 @@ async function loadReports() {
 
             reportMarkers.push(marker);
         });
+
+        drawHeatMap();
+
     } catch (error) {
         console.error("Error loading reports:", error);
     }
+}
+
+function drawHeatMap() {
+    if (heatLayer) {
+        map.removeLayer(heatLayer);
+    }
+
+    const heatPoints = allReports.map(report => [
+        report.latitude,
+        report.longitude,
+        getWeightForReport(report.type, report.severity)
+    ]);
+
+    heatLayer = L.heatLayer(heatPoints, {
+        radius: 30,
+        blur: 20,
+        maxZoom: 17
+    }).addTo(map);
 }
 
 document.addEventListener("DOMContentLoaded", initMap);
