@@ -17,13 +17,27 @@
 <body>
 <header>
     <h1>DERN Safety Map</h1>
+
     <nav>
         <a href="/index.html">Map</a>
         <a href="/report.html">Report</a>
         <a href="/dashboard.html">Dashboard</a>
     </nav>
 </header>
+<button id="menuToggleBtn" class="hamburger-btn">☰</button>
 
+<div id="sideMenu" class="side-menu hidden-menu">
+    <h3>Menu</h3>
+
+    <button id="toggleMarkersBtn">Hide Markers</button>
+    <button id="toggleHeatmapBtn">Hide Heatmap</button>
+
+    <hr />
+
+    <a href="tel:100">Police</a>
+    <a href="tel:108">Ambulance</a>
+    <a href="tel:101">Fire Force</a>
+</div>
 <main>
     <div id="alertBox" class="alert-hidden"></div>
 
