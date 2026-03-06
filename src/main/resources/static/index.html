@@ -26,8 +26,24 @@
 
 <main>
     <div id="alertBox" class="alert-hidden"></div>
+
+    <div class="map-controls">
+        <button id="toggleMarkersBtn">Hide Markers</button>
+        <button id="toggleHeatmapBtn">Hide Heatmap</button>
+    </div>
+
+    <div id="legendBox">
+        <h4>Legend</h4>
+        <div><span class="legend-dot red"></span> Pothole / Crash</div>
+        <div><span class="legend-dot orange"></span> Unsafe Area / Open Canal</div>
+        <div><span class="legend-dot yellow"></span> Violation</div>
+        <div><span class="legend-dot blue"></span> Your Location / Default</div>
+    </div>
+
     <div id="map"></div>
+
     <button id="sosButton" class="sos-off">SOS</button>
+
 </main>
 
 <script

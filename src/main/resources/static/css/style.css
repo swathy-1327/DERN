@@ -108,20 +108,74 @@ button {
     100%{transform:scale(1)}
 }
 
-#alertBox{
+#alertBox {
     position: fixed;
     top: 90px;
     left: 50%;
     transform: translateX(-50%);
-    background: #facc15;
-    color: #111827;
+    background: #f87171;
+    color: white;
     padding: 12px 18px;
     border-radius: 10px;
     font-weight: bold;
     z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    max-width: 90%;
+    text-align: center;
+}
+
+.alert-hidden {
+    display: none;
+}
+
+.map-controls {
+    position: fixed;
+    top: 140px;
+    left: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.map-controls button {
+    padding: 10px 14px;
+    border: none;
+    border-radius: 8px;
+    background: #111827;
+    color: white;
+    cursor: pointer;
     box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
 
-.alert-hidden{
-    display: none;
+#legendBox {
+    position: fixed;
+    top: 140px;
+    right: 20px;
+    z-index: 9999;
+    background: white;
+    padding: 12px 14px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    font-size: 14px;
+    line-height: 1.7;
 }
+
+#legendBox h4 {
+    margin: 0 0 8px 0;
+    font-size: 15px;
+}
+
+.legend-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+.legend-dot.red { background: red; }
+.legend-dot.orange { background: orange; }
+.legend-dot.yellow { background: gold; }
+.legend-dot.blue { background: dodgerblue; }

@@ -7,6 +7,10 @@ let currentUserLng = null;
 let allReports = [];
 let heatLayer = null;
 
+let userMarker = null ;
+let markersVisible = true ;
+let heatmapVisible = true ;
+
 const redIcon = new L.Icon({
     iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
     shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
@@ -47,40 +51,51 @@ function initMap() {
     const defaultLat = 10.0159;
     const defaultLng = 76.3419;
 
-    map = L.map("map").setView([defaultLat, defaultLng], 14);
+    map = L.map("map").setView([defaultLat, defaultLng], 13);
 
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        attribution: "&copy; OpenStreetMap contributors"
     }).addTo(map);
 
     if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const userLat = position.coords.latitude;
-                const userLng = position.coords.longitude;
+        navigator.geolocation.getCurrentPosition((position) => {
+            currentUserLat = position.coords.latitude;
+            currentUserLng = position.coords.longitude;
 
-                map.setView([userLat, userLng], 15);
+            map.setView([currentUserLat, currentUserLng], 15);
 
-                L.marker([userLat, userLng])
-                    .addTo(map)
-                    .bindPopup("You are here")
-                    .openPopup();
-            },
-            (error) => {
-                console.log("Location access denied or unavailable:", error.message);
+            if (userMarker) {
+                map.removeLayer(userMarker);
             }
-        );
-    }
 
-    loadReports();
+            userMarker = L.marker([currentUserLat, currentUserLng], { icon: blueIcon })
+                .addTo(map)
+                .bindPopup("You are here")
+                .openPopup();
+
+            loadReports();
+            trackUserLocation();
+        }, () => {
+            loadReports();
+        });
+    } else {
+        loadReports();
+    }
 }
 
 
 function checkNearbyHazards() {
     if (currentUserLat === null || currentUserLng === null) return;
+    if (!allReports || allReports.length === 0) {
+        hideAlert();
+        return;
+    }
 
-    const nearby = allReports.find(report => {
+    let nearestReport = null;
+    let nearestDistance = Infinity;
+
+    allReports.forEach(report => {
         const distance = getDistanceInMeters(
             currentUserLat,
             currentUserLng,
@@ -88,11 +103,14 @@ function checkNearbyHazards() {
             report.longitude
         );
 
-        return distance <= 100;
+        if (distance < nearestDistance) {
+            nearestDistance = distance;
+            nearestReport = report;
+        }
     });
 
-    if (nearby) {
-        showAlert(`⚠ ${nearby.type} reported nearby`);
+    if (nearestReport && nearestDistance <= 100) {
+        showAlert(`⚠ ${nearestReport.type} reported ${Math.round(nearestDistance)}m nearby`);
     } else {
         hideAlert();
     }
@@ -100,24 +118,70 @@ function checkNearbyHazards() {
 
 function showAlert(message) {
     const alertBox = document.getElementById("alertBox");
+    if (!alertBox) return;
+
     alertBox.textContent = message;
     alertBox.classList.remove("alert-hidden");
 }
 
 function hideAlert() {
     const alertBox = document.getElementById("alertBox");
+    if (!alertBox) return;
+
     alertBox.classList.add("alert-hidden");
 }
 
-function trackUserLocation() {
-    if (!navigator.geolocation) {
-        return;
+function toggleMarkers() {
+
+    markersVisible = !markersVisible;
+
+    const btn = document.getElementById("toggleMarkersBtn");
+
+    if (markersVisible) {
+
+        btn.textContent = "Hide Markers";
+        loadReports();
+
+    } else {
+
+        btn.textContent = "Show Markers";
+
+        reportMarkers.forEach(marker => {
+            map.removeLayer(marker);
+        });
+
+        reportMarkers = [];
+
     }
+
+}
+
+function toggleHeatmap() {
+    heatmapVisible = !heatmapVisible;
+
+    const btn = document.getElementById("toggleHeatmapBtn");
+    if (btn) {
+        btn.textContent = heatmapVisible ? "Hide Heatmap" : "Show Heatmap";
+    }
+
+    drawHeatMap();
+}
+
+function trackUserLocation() {
+    if (!navigator.geolocation) return;
 
     navigator.geolocation.watchPosition(
         (position) => {
             currentUserLat = position.coords.latitude;
             currentUserLng = position.coords.longitude;
+
+            if (userMarker) {
+                userMarker.setLatLng([currentUserLat, currentUserLng]);
+            } else {
+                userMarker = L.marker([currentUserLat, currentUserLng], { icon: blueIcon })
+                    .addTo(map)
+                    .bindPopup("You are here");
+            }
 
             checkNearbyHazards();
         },
@@ -172,7 +236,7 @@ async function loadReports() {
         function getIconForReport(type){
 
             if (type === "ACCIDENT_PRONE") return redIcon;
-            
+
             if(type === "POTHOLE") return redIcon;
 
             if(type === "CRASH") return redIcon;
@@ -185,23 +249,28 @@ async function loadReports() {
 
             return blueIcon;
         }
-
         reportMarkers.forEach(marker => map.removeLayer(marker));
         reportMarkers = [];
 
-        reports.forEach((report) => {
-            const marker = L.marker([report.latitude, report.longitude] , { icon : getIconForReport(report.type) })
-                .addTo(map)
-                .bindPopup(`
-          <b>${report.type}</b><br>
-          ${report.description || "No description"}<br>
-          Severity: ${report.severity ?? "N/A"}
-        `);
+        if (markersVisible) {
+            reports.forEach((report) => {
+                const marker = L.marker(
+                    [report.latitude, report.longitude],
+                    {icon: getIconForReport(report.type)}
+                )
+                    .addTo(map)
+                    .bindPopup(`
+                    <b>${report.type}</b><br>
+                    ${report.description || "No description"}<br>
+                    Severity: ${report.severity ?? "N/A"}
+                `);
 
-            reportMarkers.push(marker);
-        });
+                reportMarkers.push(marker);
+            });
+        }
 
         drawHeatMap();
+        checkNearbyHazards();
 
     } catch (error) {
         console.error("Error loading reports:", error);
@@ -211,7 +280,10 @@ async function loadReports() {
 function drawHeatMap() {
     if (heatLayer) {
         map.removeLayer(heatLayer);
+        heatLayer = null;
     }
+
+    if (!heatmapVisible) return;
 
     const heatPoints = allReports.map(report => [
         report.latitude,
@@ -226,18 +298,33 @@ function drawHeatMap() {
     }).addTo(map);
 }
 
-document.addEventListener("DOMContentLoaded", initMap);
+document.addEventListener("DOMContentLoaded", () => {
+    initMap();
 
-const sosButton = document.getElementById("sosButton");
-
-sosButton.addEventListener("click", async () => {
-
-    if(!sosActive){
-        activateSOS();
-    } else {
-        cancelSOS();
+    const sosButton = document.getElementById("sosButton");
+    if (sosButton) {
+        sosButton.addEventListener("click", async () => {
+            if (!sosActive) {
+                await activateSOS();
+            } else {
+                await cancelSOS();
+            }
+        });
     }
 
+    const toggleMarkersBtn = document.getElementById("toggleMarkersBtn");
+    if (toggleMarkersBtn) {
+        toggleMarkersBtn.addEventListener("click", toggleMarkers);
+    }
+
+    const toggleHeatmapBtn = document.getElementById("toggleHeatmapBtn");
+    if (toggleHeatmapBtn) {
+        toggleHeatmapBtn.addEventListener("click", toggleHeatmap);
+    }
+
+    setInterval(() => {
+        loadReports();
+    }, 15000);
 });
 
 async function activateSOS(){
