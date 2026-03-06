@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Report Hazard</title>
+    <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+<header>
+    <h1>Report Hazard</h1>
+    <nav>
+        <a href="/index.html">Map</a>
+        <a href="/report.html">Report</a>
+        <a href="/dashboard.html">Dashboard</a>
+    </nav>
+</header>
+
+<main>
+    <form id="reportForm">
+        <label>Type</label>
+        <select id="type" required>
+            <option value="POTHOLE">Pothole</option>
+            <option value="OPEN_CANAL">Open Canal</option>
+            <option value="CRASH">Crash</option>
+            <option value="UNSAFE_AREA">Unsafe Area</option>
+            <option value="VIOLATION">Traffic Violation</option>
+        </select>
+
+        <label>Description</label>
+        <textarea id="description"></textarea>
+
+        <label>Latitude</label>
+        <input type="number" step="any" id="latitude" required />
+
+        <label>Longitude</label>
+        <input type="number" step="any" id="longitude" required />
+
+        <label>Severity (1-5)</label>
+        <input type="number" id="severity" min="1" max="5" required />
+
+        <label>Number Plate</label>
+        <input type="text" id="numberPlate" />
+
+        <button type="submit">Submit Report</button>
+    </form>
+
+    <p id="message"></p>
+</main>
+
+<script src="/js/report.js"></script>
+</body>
+</html>
