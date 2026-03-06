@@ -2,6 +2,7 @@ package com.dern.controller;
 
 import com.dern.model.SosEvent;
 import com.dern.repository.SosEventRepository;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -18,7 +19,13 @@ public class SosEventController {
     }
 
     @PostMapping
-    public SosEvent createSos(@RequestBody SosEvent sosEvent) {
+    public SosEvent createSos(@RequestBody SosEvent sosEvent, HttpSession session) {
+        Object userId = session.getAttribute("userId");
+
+        if (userId != null) {
+            sosEvent.setUserId(Long.valueOf(userId.toString()));
+        }
+
         sosEvent.setCreatedAt(LocalDateTime.now());
 
         if (sosEvent.getStatus() == null || sosEvent.getStatus().isBlank()) {
@@ -28,19 +35,17 @@ public class SosEventController {
         return sosEventRepository.save(sosEvent);
     }
 
-    @GetMapping
-    public List<SosEvent> getAllSosEvents() {
-        return sosEventRepository.findAll();
-    }
-
     @PutMapping("/{id}/cancel")
     public SosEvent cancelSos(@PathVariable Long id) {
-
         SosEvent sos = sosEventRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("SOS not found"));
 
         sos.setStatus("CANCELLED");
-
         return sosEventRepository.save(sos);
+    }
+
+    @GetMapping
+    public List<SosEvent> getAllSosEvents() {
+        return sosEventRepository.findAll();
     }
 }

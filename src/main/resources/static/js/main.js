@@ -7,6 +7,11 @@ let currentUserLng = null;
 let allReports = [];
 let heatLayer = null;
 
+let userMarkers = null;
+let markersVisible = true ;
+let heatmapVisible = true ;
+
+
 const redIcon = new L.Icon({
     iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
     shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
@@ -47,33 +52,37 @@ function initMap() {
     const defaultLat = 10.0159;
     const defaultLng = 76.3419;
 
-    map = L.map("map").setView([defaultLat, defaultLng], 14);
+    map = L.map("map").setView([defaultLat, defaultLng], 13);
 
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        attribution: "&copy; OpenStreetMap contributors"
     }).addTo(map);
 
     if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const userLat = position.coords.latitude;
-                const userLng = position.coords.longitude;
+        navigator.geolocation.getCurrentPosition((position) => {
+            currentUserLat = position.coords.latitude;
+            currentUserLng = position.coords.longitude;
 
-                map.setView([userLat, userLng], 15);
+            map.setView([currentUserLat, currentUserLng], 15);
 
-                L.marker([userLat, userLng])
-                    .addTo(map)
-                    .bindPopup("You are here")
-                    .openPopup();
-            },
-            (error) => {
-                console.log("Location access denied or unavailable:", error.message);
+            if (userMarker) {
+                map.removeLayer(userMarker);
             }
-        );
-    }
 
-    loadReports();
+            userMarker = L.marker([currentUserLat, currentUserLng], { icon: blueIcon })
+                .addTo(map)
+                .bindPopup("You are here")
+                .openPopup();
+
+            loadReports();
+            trackUserLocation();
+        }, () => {
+            loadReports();
+        });
+    } else {
+        loadReports();
+    }
 }
 
 
@@ -107,6 +116,42 @@ function showAlert(message) {
 function hideAlert() {
     const alertBox = document.getElementById("alertBox");
     alertBox.classList.add("alert-hidden");
+}
+
+function toggleMarkers() {
+
+    markersVisible = !markersVisible;
+
+    const btn = document.getElementById("toggleMarkersBtn");
+
+    if (markersVisible) {
+
+        btn.textContent = "Hide Markers";
+        loadReports();
+
+    } else {
+
+        btn.textContent = "Show Markers";
+
+        reportMarkers.forEach(marker => {
+            map.removeLayer(marker);
+        });
+
+        reportMarkers = [];
+
+    }
+
+}
+
+function toggleHeatmap() {
+    heatmapVisible = !heatmapVisible;
+
+    const btn = document.getElementById("toggleHeatmapBtn");
+    if (btn) {
+        btn.textContent = heatmapVisible ? "Hide Heatmap" : "Show Heatmap";
+    }
+
+    drawHeatMap();
 }
 
 function trackUserLocation() {
@@ -188,20 +233,21 @@ async function loadReports() {
 
         reportMarkers.forEach(marker => map.removeLayer(marker));
         reportMarkers = [];
-
-        reports.forEach((report) => {
-            const marker = L.marker([report.latitude, report.longitude] , { icon : getIconForReport(report.type) })
-                .addTo(map)
-                .bindPopup(`
+        if(markersVisible) {
+            reports.forEach((report) => {
+                const marker = L.marker([report.latitude, report.longitude], {icon: getIconForReport(report.type)})
+                    .addTo(map)
+                    .bindPopup(`
           <b>${report.type}</b><br>
           ${report.description || "No description"}<br>
           Severity: ${report.severity ?? "N/A"}
         `);
 
-            reportMarkers.push(marker);
-        });
-
+                reportMarkers.push(marker);
+            });
+        }
         drawHeatMap();
+        checkNearbyHazards()
 
     } catch (error) {
         console.error("Error loading reports:", error);
@@ -226,108 +272,56 @@ function drawHeatMap() {
     }).addTo(map);
 }
 
-document.addEventListener("DOMContentLoaded", initMap);
+document.addEventListener("DOMContentLoaded", () => {
 
-const sosButton = document.getElementById("sosButton");
+    initMap();
 
-sosButton.addEventListener("click", async () => {
+    const sosButton = document.getElementById("sosButton");
+    const toggleMarkersBtn = document.getElementById("toggleMarkersBtn");
+    const toggleHeatmapBtn = document.getElementById("toggleHeatmapBtn");
+    const menuToggleBtn = document.getElementById("menuToggleBtn");
+    const sideMenu = document.getElementById("sideMenu");
 
-    if(!sosActive){
-        activateSOS();
-    } else {
-        cancelSOS();
+    if (menuToggleBtn && sideMenu) {
+        menuToggleBtn.addEventListener("click", () => {
+            sideMenu.classList.toggle("hidden-menu");
+        });
     }
+
+    if (toggleMarkersBtn) {
+        toggleMarkersBtn.addEventListener("click", toggleMarkers);
+    }
+
+    if (toggleHeatmapBtn) {
+        toggleHeatmapBtn.addEventListener("click", toggleHeatmap);
+    }
+
+    if (sosButton) {
+        sosButton.addEventListener("click", async () => {
+            if (!sosActive) {
+                await activateSOS();
+            } else {
+                await cancelSOS();
+            }
+        });
+    }
+
+    // Reload reports every 15 seconds
+    setInterval(() => {
+        loadReports();
+    }, 15000);
 
 });
 
-async function activateSOS(){
+async function activateSOS() {
 
-    if(!navigator.geolocation){
+    if (!navigator.geolocation) {
         alert("Geolocation not supported");
         return;
     }
 
-    navigator.geolocation.getCurrentPosition(async (position)=>{
-
-        const payload = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            status: "ACTIVE"
-        };
-
-        try{
-
-            const response = await fetch("/api/sos",{
-                method:"POST",
-                headers:{
-                    "Content-Type":"application/json"
-                },
-                body:JSON.stringify(payload)
-            });
-
-            const data = await response.json();
-
-            activeSosId = data.id;
-
-            sosActive = true;
-
-            updateSOSButton();
-
-        }catch(error){
-            console.error(error);
-        }
-
-    });
-
-}
-
-async function cancelSOS(){
-
-    if(!activeSosId) return;
-
-    try{
-
-        const response = await fetch(`/api/sos/${activeSosId}/cancel`,{
-            method:"PUT"
-        });
-
-        if(response.ok){
-
-            sosActive = false;
-            activeSosId = null;
-
-            updateSOSButton();
-        }
-
-    }catch(error){
-        console.error(error);
-    }
-
-}
-function updateSOSButton(){
-
-    if(sosActive){
-
-        sosButton.textContent = "CANCEL";
-        sosButton.classList.remove("sos-off");
-        sosButton.classList.add("sos-on");
-
-    }else{
-
-        sosButton.textContent = "SOS";
-        sosButton.classList.remove("sos-on");
-        sosButton.classList.add("sos-off");
-
-    }
-
-}
-async function triggerSOS() {
-    if (!navigator.geolocation) {
-        alert("Geolocation not supported.");
-        return;
-    }
-
     navigator.geolocation.getCurrentPosition(async (position) => {
+
         const payload = {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
@@ -335,6 +329,7 @@ async function triggerSOS() {
         };
 
         try {
+
             const response = await fetch("/api/sos", {
                 method: "POST",
                 headers: {
@@ -346,12 +341,59 @@ async function triggerSOS() {
             const data = await response.json();
 
             activeSosId = data.id;
+            sosActive = true;
 
-            alert("SOS Activated");
+            updateSOSButton();
 
         } catch (error) {
             console.error(error);
-            alert("Something went wrong.");
         }
+
     });
+
+}
+
+async function cancelSOS() {
+
+    if (!activeSosId) return;
+
+    try {
+
+        const response = await fetch(⁠ /api/sos/${activeSosId}/cancel ⁠, {
+        method: "PUT"
+    });
+
+    if (response.ok) {
+
+        sosActive = false;
+        activeSosId = null;
+
+        updateSOSButton();
+    }
+
+} catch (error) {
+    console.error(error);
+}
+
+}
+
+function updateSOSButton() {
+
+    const sosButton = document.getElementById("sosButton");
+    if (!sosButton) return;
+
+    if (sosActive) {
+
+        sosButton.textContent = "CANCEL";
+        sosButton.classList.remove("sos-off");
+        sosButton.classList.add("sos-on");
+
+    } else {
+
+        sosButton.textContent = "SOS";
+        sosButton.classList.remove("sos-on");
+        sosButton.classList.add("sos-off");
+
+    }
+
 }

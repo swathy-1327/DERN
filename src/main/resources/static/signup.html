@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign Up</title>
+    <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+<main class="auth-container">
+    <form id="signupForm" class="auth-card">
+        <h2>Create Account</h2>
+
+        <input type="text" id="name" placeholder="Full Name" required />
+        <input type="email" id="email" placeholder="Email" required />
+        <input type="password" id="password" placeholder="Password" required />
+        <input type="text" id="fatherPhone" placeholder="Father's Phone Number" />
+        <input type="text" id="motherPhone" placeholder="Mother's Phone Number" />
+        <input type="text" id="guardianPhone" placeholder="Guardian's Phone Number" />
+
+        <select id="role" required>
+            <option value="">Select Role</option>
+            <option value="USER">User</option>
+            <option value="VOLUNTEER">Volunteer</option>
+        </select>
+
+        <button type="submit">Sign Up</button>
+        <p id="signupMessage"></p>
+        <p>Already have an account? <a href="/login.html">Login</a></p>
+    </form>
+</main>
+
+<script src="/js/signup.js"></script>
+</body>
+</html>
