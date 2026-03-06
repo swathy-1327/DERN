@@ -32,4 +32,15 @@ public class SosEventController {
     public List<SosEvent> getAllSosEvents() {
         return sosEventRepository.findAll();
     }
+
+    @PutMapping("/{id}/cancel")
+    public SosEvent cancelSos(@PathVariable Long id) {
+
+        SosEvent sos = sosEventRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("SOS not found"));
+
+        sos.setStatus("CANCELLED");
+
+        return sosEventRepository.save(sos);
+    }
 }

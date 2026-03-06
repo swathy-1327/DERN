@@ -1,5 +1,7 @@
 let map;
 let reportMarkers = [];
+let activeSosId = null;
+let sosActive = false;
 
 function initMap() {
     const defaultLat = 10.0159;
@@ -60,14 +62,99 @@ async function loadReports() {
 
 document.addEventListener("DOMContentLoaded", initMap);
 
-document.addEventListener("DOMContentLoaded", () => {
-    const sosButton = document.getElementById("sosButton");
+const sosButton = document.getElementById("sosButton");
 
-    if (sosButton) {
-        sosButton.addEventListener("click", triggerSOS);
+sosButton.addEventListener("click", async () => {
+
+    if(!sosActive){
+        activateSOS();
+    } else {
+        cancelSOS();
     }
+
 });
 
+async function activateSOS(){
+
+    if(!navigator.geolocation){
+        alert("Geolocation not supported");
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(async (position)=>{
+
+        const payload = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            status: "ACTIVE"
+        };
+
+        try{
+
+            const response = await fetch("/api/sos",{
+                method:"POST",
+                headers:{
+                    "Content-Type":"application/json"
+                },
+                body:JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            activeSosId = data.id;
+
+            sosActive = true;
+
+            updateSOSButton();
+
+        }catch(error){
+            console.error(error);
+        }
+
+    });
+
+}
+
+async function cancelSOS(){
+
+    if(!activeSosId) return;
+
+    try{
+
+        const response = await fetch(`/api/sos/${activeSosId}/cancel`,{
+            method:"PUT"
+        });
+
+        if(response.ok){
+
+            sosActive = false;
+            activeSosId = null;
+
+            updateSOSButton();
+        }
+
+    }catch(error){
+        console.error(error);
+    }
+
+}
+function updateSOSButton(){
+
+    if(sosActive){
+
+        sosButton.textContent = "CANCEL";
+        sosButton.classList.remove("sos-off");
+        sosButton.classList.add("sos-on");
+
+    }else{
+
+        sosButton.textContent = "SOS";
+        sosButton.classList.remove("sos-on");
+        sosButton.classList.add("sos-off");
+
+    }
+
+}
 async function triggerSOS() {
     if (!navigator.geolocation) {
         alert("Geolocation not supported.");
@@ -90,11 +177,12 @@ async function triggerSOS() {
                 body: JSON.stringify(payload)
             });
 
-            if (response.ok) {
-                alert("SOS triggered successfully.");
-            } else {
-                alert("Failed to trigger SOS.");
-            }
+            const data = await response.json();
+
+            activeSosId = data.id;
+
+            alert("SOS Activated");
+
         } catch (error) {
             console.error(error);
             alert("Something went wrong.");
