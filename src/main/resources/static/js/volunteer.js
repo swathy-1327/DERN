@@ -57,6 +57,7 @@ async function loadActiveRequests() {
                 <a target="_blank" href="https://www.google.com/maps?q=${event.latitude},${event.longitude}">
                   Open Location
                 </a>
+                <button onclick ="markRequestSpam(${event.id})">Mark as Spam</button>
                 <p><strong>Responder Priority:</strong></p>
                 <ul>
                   <li>Doctors nearby</li>
@@ -106,5 +107,19 @@ async function pollVolunteerNotifications(initialLoad = false) {
         }
     } catch (e) {
         console.error(e);
+    }
+}
+async function markRequestSpam(id) {
+    try {
+        const response = await fetch(`/api/volunteer/mark-spam/${id}`, {
+            method: "POST"
+        });
+
+        const data = await response.json();
+        alert(data.message || "Spam vote submitted");
+        loadActiveRequests();
+    } catch (error) {
+        console.error(error);
+        alert("Failed to mark as spam");
     }
 }

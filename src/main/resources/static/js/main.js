@@ -118,7 +118,24 @@ function initMap() {
         loadReports();
     }
 }
+let lastSpokenMessage = "";
 
+function speakAlert(message) {
+    if (!("speechSynthesis" in window)) return;
+
+    if (lastSpokenMessage === message) return;
+
+    lastSpokenMessage = message;
+
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(message);
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+
+    window.speechSynthesis.speak(utterance);
+}
 
 function checkNearbyHazards() {
     if (currentUserLat === null || currentUserLng === null) return;
@@ -145,9 +162,30 @@ function checkNearbyHazards() {
     });
 
     if (nearestReport && nearestDistance <= 100) {
-        showAlert(`⚠ ${nearestReport.type} reported ${Math.round(nearestDistance)}m nearby`);
+        let spokenMessage = "";
+
+        if (nearestReport.type === "POTHOLE") {
+            spokenMessage = "Pothole ahead";
+        } else if (nearestReport.type === "CRASH") {
+            spokenMessage = "Crash ahead";
+        } else if (nearestReport.type === "OPEN_CANAL") {
+            spokenMessage = "Open canal ahead";
+        } else if (nearestReport.type === "UNSAFE_AREA") {
+            spokenMessage = "Unsafe area ahead";
+        } else if (nearestReport.type === "ACCIDENT_PRONE") {
+            spokenMessage = "Accident prone area ahead";
+        } else if (nearestReport.type === "NARROW_ROAD") {
+            spokenMessage = "Narrow road ahead";
+        } else {
+            spokenMessage = `${nearestReport.type} ahead`;
+        }
+
+        showAlert(`⚠ ${spokenMessage} (${Math.round(nearestDistance)}m)`);
+
+        speakAlert(spokenMessage);
     } else {
         hideAlert();
+        lastSpokenMessage = "";
     }
 }
 function getSkillPriority(skill){
@@ -331,6 +369,7 @@ function getWeightForReport(type, severity) {
     if (type === "OPEN_CANAL") return Math.min(1, 0.45 + s * 0.1);
     if (type === "UNSAFE_AREA") return Math.min(1, 0.35 + s * 0.1);
     if (type === "VIOLATION") return Math.min(1, 0.25 + s * 0.08);
+    if (type === "NARROW_ROAD") return Math.min(1, 0.3 + s * 0.08);
 
     return 0.4;
 }
@@ -355,6 +394,8 @@ async function loadReports() {
             if(type === "UNSAFE_AREA") return orangeIcon;
 
             if(type === "VIOLATION") return yellowIcon;
+
+            if(type === "NARROW_ROAD") return orangeIcon;
 
             return blueIcon;
         }

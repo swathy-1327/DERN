@@ -16,10 +16,26 @@ public class SosEvent {
     private Double longitude;
     private String status;
     private LocalDateTime createdAt;
+    private Integer spamCount;
+    private Boolean spamFlagged;
 
     public SosEvent() {
     }
+    public Integer getSpamCount() {
+        return spamCount;
+    }
 
+    public void setSpamCount(Integer spamCount) {
+        this.spamCount = spamCount;
+    }
+
+    public Boolean getSpamFlagged() {
+        return spamFlagged;
+    }
+
+    public void setSpamFlagged(Boolean spamFlagged) {
+        this.spamFlagged = spamFlagged;
+    }
     public Long getUserId() {
         return userId;
     }

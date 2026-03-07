@@ -36,7 +36,13 @@ public class SosEventController {
             sosEvent.setStatus("ACTIVE");
         }
 
+        if (sosEvent.getSpamCount() == null) {
+            sosEvent.setSpamCount(0);
+        }
 
+        if (sosEvent.getSpamFlagged() == null) {
+            sosEvent.setSpamFlagged(false);
+        }
         SosEvent saved = sosEventRepository.save(sosEvent);
 
         if (userId != null) {
