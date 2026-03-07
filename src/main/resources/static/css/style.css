@@ -309,3 +309,27 @@ button {
     font-weight: bold;
     margin: 10px 0 0;
 }
+
+
+.hidden-panel {
+    display: none;
+}
+
+.safe-walk-panel {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9998;
+    width: min(92%, 420px);
+    background: white;
+    padding: 16px;
+    border-radius: 14px;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+}
+
+.safe-walk-panel input,
+.safe-walk-panel button {
+    width: 100%;
+    margin-top: 8px;
+}
