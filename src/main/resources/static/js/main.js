@@ -493,6 +493,21 @@ async function activateSOS(){
             activeSosId = data.id;
 
             sosActive = true;
+            const alertEntry = {
+                title: "SOS Alert Triggered",
+                message: `Emergency reported at ${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`,
+                time: new Date().toLocaleString()
+            };
+
+            const existingAlerts = JSON.parse(localStorage.getItem("dernAlerts") || "[]");
+            existingAlerts.unshift(alertEntry);
+            localStorage.setItem("dernAlerts", JSON.stringify(existingAlerts.slice(0, 20)));
+
+            if (localStorage.getItem("dernNotificationsEnabled") === "true" && Notification.permission === "granted") {
+                new Notification("DERN SOS Alert", {
+                    body: "A user has triggered an SOS emergency alert."
+                });
+            }
             const best = findBestResponder(
                 position.coords.latitude,
                 position.coords.longitude
